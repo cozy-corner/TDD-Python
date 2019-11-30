@@ -84,14 +84,12 @@ class TestCaseTest(TestCase):
 
   # 例外
   def testFailedResult(self):
-    pdb.set_trace()
     test = WasRun("testBrokenMethod")
     result = test.run()
     assert("1 run, 1 failed" == result.summary())
 
   # 失敗
   def testFailedResultFormatting(self):
-    pdb.set_trace()
     result = TestResult()
     result.testStarted()
     result.testFailed()
