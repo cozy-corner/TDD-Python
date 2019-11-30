@@ -5,12 +5,14 @@ class TestCase:
   # Javaのabstract
   def setUp(self):
     pass
-
+  
   # Javaのabstract 
   def tearDown(self):
     pass
-
+  
   def run(self):
+    result = TestResult()
+    result.testStarted()
 
     # TemplateMethod
 
@@ -24,6 +26,19 @@ class TestCase:
     
     # 後片付け
     self.tearDown()
+
+    return result
+
+
+# テスト結果を保持するクラス
+class TestResult:
+  def __init__(self):
+    self.runCount = 0
+  def testStarted(self):
+    self.runCount = self.runCount + 1
+  def summary(self):
+    # TODO
+    return "%d run, 0 failed" % self.runCount
 
 
 # テスト対象クラス
@@ -39,7 +54,9 @@ class WasRun(TestCase):
   def tearDown(self):
     self.log = self.log + "tearDown "
 
-
+  # 失敗用のテスト
+  def testBrokenMethod(self):
+    raise Exception
 
 class TestCaseTest(TestCase):
 
@@ -48,5 +65,19 @@ class TestCaseTest(TestCase):
     test.run()
     assert("setUp testMethod tearDown " == test.log)
 
+  def testResult(self):
+    test = WasRun("testMethod")
+    result = test.run()
+    assert("1 run, 0 failed" == result.summary())
+
+
+  def testFailedResult(self):
+    test = WasRun("testBrokenMethod")
+    result = test.run()
+    assert("1 run, 1 failed" == result.summary())
+
+
 TestCaseTest("testTemplateMethod").run()
+TestCaseTest("testResult").run()
+# TestCaseTest("testFailedResult").run()
 
