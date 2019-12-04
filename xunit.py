@@ -36,11 +36,10 @@ class TestCase:
             method = getattr(self, self.name)
             
             # 書籍ではこの代入はなし
-            # 再帰の結果を保持していなかったため、errorCountが反映されなかった
+            # TestCaseTestの各メソッドから実行したテスト対象クラスのインスタンスを保持していなかったため、errorCountが反映されなかった
             method_result = method()
             if isinstance(method_result, TestResult):
                 result = method_result
-
         except:
             result.testFailed()
 
