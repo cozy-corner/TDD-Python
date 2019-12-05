@@ -21,8 +21,7 @@ class TestCase:
     def tearDown(self):
         pass
     
-    def run(self):
-        result = TestResult()
+    def run(self, result):
         result.testStarted()
 
         # TemplateMethod
@@ -34,18 +33,13 @@ class TestCase:
         # Plugddable Object (リフレクション)
         try:
             method = getattr(self, self.name)
-            
-            # 書籍ではこの代入はなし
-            # TestCaseTestの各メソッドから実行したテスト対象クラスのインスタンスを保持していなかったため、errorCountが反映されなかった
-            method_result = method()
-            if isinstance(method_result, TestResult):
-                result = method_result
-        except:
+            method()
+        except Exception as e:
+            print(e.args)
             result.testFailed()
 
         # 後片付け
         self.tearDown()
-        return result
 
 # テスト対象クラス
 class WasRun(TestCase):
@@ -56,56 +50,67 @@ class WasRun(TestCase):
     def testMethod(self):
         self.log = self.log + "testMethod "        
     def testBrokenMethod(self):
-        raise Exception
+        raise Exception('testBrokenMethod')
     def tearDown(self):
         self.log = self.log + "tearDown "
 
 class TestCaseTest(TestCase):
 
+    def setUp(self):
+        self.result = TestResult()
+
     # 正しい順序で実行されたことを検証
     def testTemplateMethod(self):
         test = WasRun("testMethod")
-        test.run()
+        test.run(self.result)
         assert("setUp testMethod tearDown " == test.log)
 
     # 正常パターン
     def testResult(self):
         test = WasRun("testMethod")
-        result = test.run()
-        assert("1 run, 0 failed" == result.summary())
-        # 書籍ではこのreturn はなし
-        return result
+        test.run(self.result)
+        assert("1 run, 0 failed" == self.result.summary())
 
     # 例外
     def testFailedResult(self):
         test = WasRun("testBrokenMethod")
-        result = test.run()
-        assert("1 run, 1 failed" == result.summary())
-        # 書籍ではこのreturn はなし
-        return result
+        test.run(self.result)
+        assert("1 run, 1 failed" == self.result.summary())
 
     # 失敗
     def testFailedResultFormatting(self):
-        result = TestResult()
-        result.testStarted()
-        result.testFailed()
-        assert("1 run, 1 failed" == result.summary())
-        # 書籍ではこのreturn はなし
-        return result
+        self.result.testStarted()
+        self.result.testFailed()
+        assert("1 run, 1 failed" == self.result.summary())
 
-print(TestCaseTest("testTemplateMethod").run().summary())
-print(TestCaseTest("testResult").run().summary())
-print(TestCaseTest("testFailedResult").run().summary())
-print(TestCaseTest("testFailedResultFormatting").run().summary())
+    def testSuite(self):
+        suite = TestSuite()
+        suite.add(WasRun("testMethod"))
+        suite.add(WasRun("testBrokenMethod"))
+        suite.run(self.result)
+        assert("2 run, 1 failed" == self.result.summary())
 
-# 書籍通りの実行結果
-# 1 run, 0 failed
-# 1 run, 0 failed
-# 1 run, 0 failed
-# 1 run, 0 failed
+class TestSuite:
+    def __init__(self):
+        self.tests = []
+    def add(self, test):
+        self.tests.append(test)
+
+    # まとめてテストを実行
+    def run(self, result):
+        for test in self.tests:
+            test.run(result)
+
+suite = TestSuite()
+suite.add(TestCaseTest("testTemplateMethod"))
+suite.add(TestCaseTest("testResult"))
+suite.add(TestCaseTest("testFailedResult"))
+suite.add(TestCaseTest("testFailedResultFormatting"))
+suite.add(TestCaseTest("testSuite"))
+result = TestResult()
+suite.run(result)
+print(result.summary())
 
 # 実行結果
-# 1 run, 0 failed
-# 1 run, 0 failed
-# 1 run, 1 failed
-# 1 run, 1 failed
+# 5 run, 0 failed
+# 0 failed なのは、「想定通りに失敗した」という意味なので suite の結果としては問題ない
